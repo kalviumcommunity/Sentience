@@ -14,7 +14,6 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { hashPassword, generateSalt } from '@/utils/crypto';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -95,11 +94,8 @@ const Login = () => {
     setError(null);
     
     try {
-      // Hash password client-side before sending
-      const salt = generateSalt();
-      const hashedPassword = await hashPassword(formData.password, salt);
-      
-      await login(formData.email, hashedPassword);
+      // Send plain password - server will handle hashing
+      await login(formData.email, formData.password);
       navigate('/'); // Redirect to home page after successful login
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
