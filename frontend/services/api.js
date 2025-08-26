@@ -27,7 +27,8 @@ const authRequest = async (endpoint, options = {}, retries = 3) => {
     try {
       const response = await fetch(`${API_URL}${endpoint}`, {
         ...options,
-        headers
+        headers,
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -122,4 +123,4 @@ export const focusAPI = {
 };
 
 // Health check
-export const healthCheck = () => fetch(`${API_URL}/health`).then(res => res.json()); 
+export const healthCheck = () => fetch(`${API_URL}/health`, { credentials: 'include' }).then(res => res.json()); 

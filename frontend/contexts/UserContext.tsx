@@ -101,9 +101,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         const response = await fetch(`${API_URL}/health`, {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            'Origin': 'https://sentiencehub.netlify.app'
+            'Content-Type': 'application/json'
           },
+          credentials: 'include',
           mode: 'cors'
         });
         
@@ -152,7 +152,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         method: 'GET',
         headers: {
           'x-auth-token': token
-        }
+        },
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -212,6 +213,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         const response = await fetch(`${API_URL}/users/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             name,
             email,
@@ -244,6 +246,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         const response = await fetch(`${API_URL}/users/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             name,
             email,
@@ -290,6 +293,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         const response = await fetch(`${API_URL}/users/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ email, password })
         });
         
@@ -313,6 +317,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         const response = await fetch(`${API_URL}/users/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ email, password })
         });
         
@@ -369,6 +374,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             'Content-Type': 'application/json',
             'x-auth-token': token
           },
+          credentials: 'include',
           body: JSON.stringify(data)
         });
         

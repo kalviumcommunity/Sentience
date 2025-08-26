@@ -23,6 +23,41 @@ const PORT = process.env.PORT || 8000;
 // Trust proxy (Render/Cloudflare) so rate limiter can use X-Forwarded-For
 app.set('trust proxy', 2);
 
+// CORS middleware - must be before other middleware
+// CORS middleware
+const allowedOrigins = [
+  'https://sentiencehub.netlify.app',
+  'https://sentience.onrender.com',
+  'http://localhost:3000',
+  'http://localhost:4173',
+  'http://localhost:8080',
+  'http://localhost:8081',
+  'http://localhost:8082',
+  'http://localhost:8083',
+  'http://localhost:8084',
+  'http://localhost:8085'
+];
+const allowedOriginRegexes = [
+  /^https:\/\/deploy-preview-\d+--sentiencehub\.netlify\.app$/
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    console.log('CORS Origin check:', origin);
+    if (!origin) return callback(null, true); // allow non-browser or same-origin
+    if (allowedOrigins.includes(origin) || allowedOriginRegexes.some((re) => re.test(origin))) {
+      console.log('CORS Origin allowed:', origin);
+      return callback(null, true);
+    }
+    console.log('CORS Origin rejected:', origin);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token', 'x-csrf-token'],
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+}));
+
 // Security middleware
 app.use(helmet());
 
@@ -82,36 +117,6 @@ app.use('/api/', (req, res, next) => {
 
 // Add CSRF error handler
 app.use(csrfErrorHandler);
-
-// CORS middleware
-const allowedOrigins = [
-  'https://sentiencehub.netlify.app',
-  'https://sentience.onrender.com',
-  'http://localhost:3000',
-  'http://localhost:4173',
-  'http://localhost:8080',
-  'http://localhost:8081',
-  'http://localhost:8082',
-  'http://localhost:8083',
-  'http://localhost:8084',
-  'http://localhost:8085'
-];
-const allowedOriginRegexes = [
-  /^https:\/\/deploy-preview-\d+--sentiencehub\.netlify\.app$/
-];
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // allow non-browser or same-origin
-    if (allowedOrigins.includes(origin) || allowedOriginRegexes.some((re) => re.test(origin))) {
-      return callback(null, true);
-    }
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token', 'x-csrf-token'],
-}));
 
 // Body parsing middleware with memory optimization
 app.use(express.json({ 
