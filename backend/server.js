@@ -140,7 +140,16 @@ app.use('/api/', (req, res, next) => {
 app.use(csrfErrorHandler);
 
 // Connect to MongoDB
-connectDB();
+connectDB().then((connection) => {
+  if (connection) {
+    console.log('✅ MongoDB connection established');
+  } else {
+    console.log('⚠️ MongoDB connection failed, but server will continue');
+  }
+}).catch((error) => {
+  console.error('❌ MongoDB connection error:', error);
+  console.log('⚠️ Server will continue without MongoDB connection');
+});
 
 // Use Routes
 app.use('/api/users', userRoutes);
@@ -154,35 +163,60 @@ app.use('/api/focus-sessions', focusRoutes);
 // CSRF Token Generation
 app.get('/api/csrf-token', generateToken);
 
-// Server Health Check with MongoDB status and memory info
-app.get('/api/health', (req, res) => {
-  const mongoStatus = 'connected'; // We'll get this from the connection
-  const mongoReadyState = 1; // Assuming connected since we're using connectDB
-  
-  // Get memory usage for monitoring
-  const memUsage = process.memoryUsage();
-  const memUsageMB = {
-    rss: Math.round(memUsage.rss / 1024 / 1024),
-    heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
-    heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
-    external: Math.round(memUsage.external / 1024 / 1024)
-  };
-  
-  res.json({ 
-    status: mongoStatus === 'connected' ? 'ok' : 'degraded', 
+// Simple health check endpoint (no MongoDB dependency)
+app.get('/api/ping', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
     message: 'Server is running',
-    mongodb: {
-      status: mongoStatus,
-      readyState: mongoReadyState,
-      host: 'connected',
-      port: 27017,
-      name: 'student-sentience'
-    },
-    memory: memUsageMB,
-    activeSessions: activeSessions ? activeSessions.size : 0,
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
   });
+});
+
+// Server Health Check with MongoDB status and memory info
+app.get('/api/health', async (req, res) => {
+  try {
+    // Get actual MongoDB connection status
+    const mongoose = await import('mongoose');
+    const mongoReadyState = mongoose.default.connection.readyState;
+    const mongoStatus = mongoReadyState === 1 ? 'connected' : 'disconnected';
+    
+    // Get memory usage for monitoring
+    const memUsage = process.memoryUsage();
+    const memUsageMB = {
+      rss: Math.round(memUsage.rss / 1024 / 1024),
+      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+      external: Math.round(memUsage.external / 1024 / 1024)
+    };
+    
+    // Determine overall status
+    const overallStatus = mongoReadyState === 1 ? 'ok' : 'degraded';
+    
+    res.status(overallStatus === 'ok' ? 200 : 503).json({ 
+      status: overallStatus,
+      message: overallStatus === 'ok' ? 'Server is running' : 'Server is running but MongoDB is disconnected',
+      mongodb: {
+        status: mongoStatus,
+        readyState: mongoReadyState,
+        host: mongoose.default.connection.host || 'unknown',
+        port: mongoose.default.connection.port || 27017,
+        name: mongoose.default.connection.name || 'student-sentience'
+      },
+      memory: memUsageMB,
+      activeSessions: activeSessions ? activeSessions.size : 0,
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Health check error:', error);
+    res.status(503).json({
+      status: 'error',
+      message: 'Health check failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Memory monitoring
