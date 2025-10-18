@@ -54,7 +54,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token', 'x-csrf-token'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token', 'x-csrf-token', 'X-CSRF-Token'],
   optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
 }));
 
@@ -81,7 +81,28 @@ const limiter = rateLimit({
 // Apply rate limiting to all routes
 app.use('/api/', limiter);
 
-// Add CSRF protection to all routes
+// Body parsing middleware with memory optimization (must run BEFORE CSRF)
+app.use(express.json({ 
+  limit: '5mb',
+  verify: (req, res, buf) => {
+    try {
+      JSON.parse(buf);
+    } catch (e) {
+      res.status(400).json({ message: 'Invalid JSON' });
+      throw new Error('Invalid JSON');
+    }
+  }
+}));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+
+// Request timeout middleware
+app.use((req, res, next) => {
+  req.setTimeout(30000); // 30 seconds
+  res.setTimeout(30000); // 30 seconds
+  next();
+});
+
+// Add CSRF protection to all routes (AFTER body parsers)
 app.use('/api/', csrfProtection);
 
 // Add session tracking middleware with memory cleanup
@@ -117,28 +138,6 @@ app.use('/api/', (req, res, next) => {
 
 // Add CSRF error handler
 app.use(csrfErrorHandler);
-
-// Body parsing middleware with memory optimization
-app.use(express.json({ 
-  limit: '5mb',
-  verify: (req, res, buf) => {
-    try {
-      JSON.parse(buf);
-    } catch (e) {
-      res.status(400).json({ message: 'Invalid JSON' });
-      throw new Error('Invalid JSON');
-    }
-  }
-}));
-
-app.use(express.urlencoded({ extended: true, limit: '5mb' }));
-
-// Request timeout middleware
-app.use((req, res, next) => {
-  req.setTimeout(30000); // 30 seconds
-  res.setTimeout(30000); // 30 seconds
-  next();
-});
 
 // Connect to MongoDB
 connectDB();

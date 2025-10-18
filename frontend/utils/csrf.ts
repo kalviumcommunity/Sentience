@@ -67,7 +67,7 @@ class CSRFProtection {
     const token = await this.getToken();
     return {
       ...headers,
-      'X-CSRF-Token': token,
+      'x-csrf-token': token,
     };
   }
 

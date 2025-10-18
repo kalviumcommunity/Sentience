@@ -235,6 +235,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         setCurrentUser(data.user);
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('currentUser', JSON.stringify(data.user));
+        
+        // Calculate token expiration (7 days from now)
+        const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
+        localStorage.setItem('tokenExpiresAt', expiresAt.toString());
+        
         toast({
           title: "Welcome to Sentience!",
           description: "Account created successfully",
@@ -268,6 +273,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         setCurrentUser(data.user);
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('currentUser', JSON.stringify(data.user));
+        
+        // Calculate token expiration (7 days from now)
+        const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
+        localStorage.setItem('tokenExpiresAt', expiresAt.toString());
+        
         toast({
           title: "Welcome to Sentience!",
           description: "Account created successfully",
@@ -306,6 +316,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         setCurrentUser(data.user);
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('currentUser', JSON.stringify(data.user));
+        
+        // Calculate token expiration (7 days from now)
+        const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
+        localStorage.setItem('tokenExpiresAt', expiresAt.toString());
+        
         toast({
           title: "Welcome back!",
           description: "Logged in successfully",
@@ -330,6 +345,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         setCurrentUser(data.user);
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('currentUser', JSON.stringify(data.user));
+        
+        // Calculate token expiration (7 days from now)
+        const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
+        localStorage.setItem('tokenExpiresAt', expiresAt.toString());
+        
         toast({
           title: "Welcome back!",
           description: "Logged in successfully",
@@ -352,6 +372,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     setCurrentUser(null);
     localStorage.removeItem('currentUser');
     localStorage.removeItem('authToken');
+    localStorage.removeItem('tokenExpiresAt');
     toast({
       title: "Logged out",
       description: "You have been logged out successfully",

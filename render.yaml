@@ -13,6 +13,6 @@ services:
       - key: MONGODB_URI
         value: "mongodb+srv://uday:uday@cluster0.n2vzkur.mongodb.net/student-sentience?retryWrites=true&w=majority&appName=Cluster0"
       - key: JWT_SECRET
-        sync: false
+        value: "your-super-secret-jwt-key-change-this-in-production-2024"
     healthCheckPath: /api/health
     autoDeploy: true 

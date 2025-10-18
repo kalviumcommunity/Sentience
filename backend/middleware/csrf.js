@@ -14,7 +14,7 @@ const csrfProtection = (req, res, next) => {
 
   // For API routes, we'll use a simple token validation
   // In a real production app, you'd want more sophisticated CSRF protection
-  const token = req.headers['x-csrf-token'] || req.body._csrf;
+  const token = req.headers['x-csrf-token'] || req.headers['X-CSRF-Token'] || (req.body ? req.body._csrf : undefined);
   
   if (!token) {
     return res.status(403).json({

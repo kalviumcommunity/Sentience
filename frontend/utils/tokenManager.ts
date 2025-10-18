@@ -11,7 +11,7 @@ class TokenManager {
   private readonly USER_KEY = 'userData';
   private readonly REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes before expiry
 
-  // Store token securely using httpOnly cookies
+  // Store token securely using localStorage (primary) and httpOnly cookies (fallback)
   setToken(tokenData: TokenData): void {
     try {
       const data = {
@@ -20,20 +20,30 @@ class TokenManager {
         user: tokenData.user
       };
       
+      // Store token in localStorage (primary method)
+      localStorage.setItem(this.TOKEN_KEY, data.token);
+      
       // Store user data in sessionStorage (non-sensitive)
       sessionStorage.setItem(this.USER_KEY, JSON.stringify(data.user));
       sessionStorage.setItem('tokenExpiresAt', data.expiresAt.toString());
       
-      // Set httpOnly cookie for token (secure)
+      // Set httpOnly cookie for token (fallback/security)
       document.cookie = `${this.TOKEN_KEY}=${data.token}; path=/; secure; samesite=strict; max-age=${7 * 24 * 60 * 60}`; // 7 days
     } catch (error) {
       console.error('Failed to store token:', error);
     }
   }
 
-  // Get token from httpOnly cookie
+  // Get token from localStorage (fallback to httpOnly cookie)
   getToken(): string | null {
     try {
+      // First try localStorage (primary method)
+      const localToken = localStorage.getItem(this.TOKEN_KEY);
+      if (localToken) {
+        return localToken;
+      }
+      
+      // Fallback to httpOnly cookie
       const cookies = document.cookie.split(';');
       const tokenCookie = cookies.find(cookie => 
         cookie.trim().startsWith(`${this.TOKEN_KEY}=`)
@@ -100,6 +110,9 @@ class TokenManager {
   // Clear all token data
   clearToken(): void {
     try {
+      // Clear localStorage token
+      localStorage.removeItem(this.TOKEN_KEY);
+      
       // Clear httpOnly cookie
       document.cookie = `${this.TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
       sessionStorage.removeItem(this.USER_KEY);
