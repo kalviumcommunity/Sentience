@@ -244,9 +244,16 @@ const startMemoryMonitoring = () => {
 // Start memory monitoring
 startMemoryMonitoring();
 
-// Error handling middleware
+// Error handling middleware with CORS headers
 app.use((err, req, res, next) => {
   console.error('❌ Server Error:', err);
+  
+  // Ensure CORS headers are set even for errors
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
   
   if (err.name === 'ValidationError') {
     return res.status(400).json({ message: 'Validation Error', details: err.message });

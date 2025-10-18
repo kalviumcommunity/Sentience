@@ -239,20 +239,25 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    console.log('Login attempt for:', email);
+    
     // Validate required fields
     if (!email || !password) {
+      console.log('Missing email or password');
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
     // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
+      console.log('User not found:', email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log('Password mismatch for:', email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
@@ -268,7 +273,11 @@ router.post('/login', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '7d' },
       (err, token) => {
-        if (err) throw err;
+        if (err) {
+          console.error('JWT signing error:', err);
+          return res.status(500).json({ message: 'Token generation failed' });
+        }
+        console.log('Login successful for:', email);
         res.json({ 
           token,
           user: {
@@ -286,8 +295,12 @@ router.post('/login', async (req, res) => {
       }
     );
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Login error:', err.message);
+    console.error('Full error:', err);
+    res.status(500).json({ 
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+    });
   }
 });
 

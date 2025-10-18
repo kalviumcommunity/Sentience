@@ -24,8 +24,7 @@ const connectDB = async () => {
       keepAliveInitialDelay: 300000,
       heartbeatFrequencyMS: 10000,
       maxIdleTimeMS: 30000,
-      bufferCommands: false, // Disable mongoose buffering
-      bufferMaxEntries: 0, // Disable mongoose buffering
+      bufferCommands: true, // Enable mongoose buffering for better error handling
     });
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
