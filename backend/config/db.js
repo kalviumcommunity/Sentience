@@ -8,7 +8,9 @@ const connectDB = async () => {
     // Check if MongoDB URI is provided
     if (!process.env.MONGODB_URI) {
       console.error('❌ MONGODB_URI environment variable is not set');
-      process.exit(1);
+      //process.exit(1);
+      console.log('⚠️ Proceeding without MongoDB URI.');
+      return null;
     }
 
     console.log('🔄 Attempting to connect to MongoDB...');
@@ -57,4 +59,4 @@ const connectDB = async () => {
   }
 };
 
-export default connectDB; 
+export default connectDB;

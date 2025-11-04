@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+dotenv.config();
+console.log("MongoDB URI:", process.env.MONGODB_URI);
 import connectDB from './config/db.js';
 import { csrfProtection, csrfErrorHandler, generateToken } from './middleware/csrf.js';
 
@@ -15,7 +17,7 @@ import moodRoutes from './routes/moodRoutes.js';
 import studyRoutes from './routes/studyRoutes.js';
 import focusRoutes from './routes/focusRoutes.js';
 
-dotenv.config();
+
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -38,18 +40,16 @@ const allowedOrigins = [
   'http://localhost:8085'
 ];
 const allowedOriginRegexes = [
-  /^https:\/\/deploy-preview-\d+--sentiencehub\.netlify\.app$/
+  /^https:\/\/deploy-preview-\d+--sentiencehub\.netlify\.app$/,
+  /^https:\/\/[^\.]+\.netlify\.app$/
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    console.log('CORS Origin check:', origin);
     if (!origin) return callback(null, true); // allow non-browser or same-origin
     if (allowedOrigins.includes(origin) || allowedOriginRegexes.some((re) => re.test(origin))) {
-      console.log('CORS Origin allowed:', origin);
       return callback(null, true);
     }
-    console.log('CORS Origin rejected:', origin);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -81,6 +81,9 @@ const limiter = rateLimit({
 // Apply rate limiting to all routes
 app.use('/api/', limiter);
 
+// Add CSRF protection to all routes (BEFORE body parsers)
+app.use('/api/', csrfProtection);
+
 // Body parsing middleware with memory optimization (must run BEFORE CSRF)
 app.use(express.json({ 
   limit: '5mb',
@@ -102,8 +105,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Add CSRF protection to all routes (AFTER body parsers)
-app.use('/api/', csrfProtection);
 
 // Add session tracking middleware with memory cleanup
 const activeSessions = new Map();
@@ -138,6 +139,9 @@ app.use('/api/', (req, res, next) => {
 
 // Add CSRF error handler
 app.use(csrfErrorHandler);
+
+// Import error handler
+import errorHandler from './middleware/errorHandler.js';
 
 // Connect to MongoDB
 connectDB().then((connection) => {
@@ -234,8 +238,7 @@ const startMemoryMonitoring = () => {
     
     console.log(`📊 Memory Usage: RSS: ${memUsageMB.rss}MB, Heap: ${memUsageMB.heapUsed}MB/${memUsageMB.heapTotal}MB, External: ${memUsageMB.external}MB`);
     
-    // Force garbage collection if available
-    if (global.gc) {
+    // Force garbage collection if (global.gc) {
       global.gc();
     }
   }, 60000); // Every minute
@@ -244,35 +247,8 @@ const startMemoryMonitoring = () => {
 // Start memory monitoring
 startMemoryMonitoring();
 
-// Error handling middleware with CORS headers
-app.use((err, req, res, next) => {
-  console.error('❌ Server Error:', err);
-  
-  // Ensure CORS headers are set even for errors
-  const origin = req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
-  }
-  
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({ message: 'Validation Error', details: err.message });
-  }
-  
-  if (err.name === 'CastError') {
-    return res.status(400).json({ message: 'Invalid ID format' });
-  }
-  
-  if (err.code === 11000) {
-    return res.status(400).json({ message: 'Duplicate field value' });
-  }
-  
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-  res.status(statusCode).json({
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
-});
+// Apply global error handler
+app.use(errorHandler);
 
 // Graceful shutdown
 const gracefulShutdown = (signal) => {
@@ -298,4 +274,4 @@ app.listen(PORT, () => {
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🔧 CORS fixes deployed: ${new Date().toISOString()}`);
-}); 
+});

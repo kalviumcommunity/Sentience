@@ -1,4 +1,3 @@
-
 import express from 'express';
 const router = express.Router();
 import bcrypt from 'bcryptjs';
@@ -7,6 +6,25 @@ import crypto from 'crypto';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User.js';
 import auth from '../middleware/auth.js';
+import { blacklistToken } from '../utils/tokenManager.js';
+
+// @route   POST api/users/logout
+// @desc    Logout user (blacklist token)
+// @access  Private
+router.post('/logout', auth, async (req, res) => {
+  try {
+    const token = req.header('x-auth-token');
+    if (!token) {
+      return res.status(400).json({ message: 'No token provided' });
+    }
+
+    blacklistToken(token);
+    res.json({ message: 'Logged out successfully' });
+  } catch (err) {
+    console.error('Logout error:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 // @route   GET api/users/validate
 // @desc    Validate JWT token
