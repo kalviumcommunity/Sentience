@@ -1,5 +1,6 @@
 import express from 'express';
 const router = express.Router();
+import { body, validationResult } from 'express-validator';
 import FocusSession from '../models/FocusSession.js';
 import auth from '../middleware/auth.js';
 
@@ -19,7 +20,17 @@ router.get('/', auth, async (req, res) => {
 // @route   POST api/focus-sessions
 // @desc    Create a new focus session
 // @access  Private
-router.post('/', auth, async (req, res) => {
+router.post('/', [
+  auth,
+  body('duration').isInt({ min: 1 }).withMessage('Duration must be a positive integer (minutes)'),
+  body('type').isIn(['work', 'break']).withMessage('Type must be work or break'),
+  body('date').optional().isISO8601().withMessage('Invalid date format')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
+  }
+
   const { date, duration, type } = req.body;
 
   try {
@@ -34,7 +45,7 @@ router.post('/', auth, async (req, res) => {
     res.json(focusSession);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Server error');
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

@@ -26,7 +26,6 @@ const StudyPlanner = () => {
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [isAddingSession, setIsAddingSession] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [apiAvailable, setApiAvailable] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -37,26 +36,18 @@ const StudyPlanner = () => {
     notes: ''
   });
 
-  // Check API availability and load study sessions
   useEffect(() => {
     const initializeSessions = async () => {
       try {
-        // Check if API is available
-        const response = await fetch('https://sentience.onrender.com/api/health');
-        setApiAvailable(response.ok);
-        
-        if (response.ok && currentUser) {
-          // Load sessions from API
+        if (currentUser) {
           const apiSessions = await studyAPI.getAll();
           setSessions(apiSessions);
         } else {
-          // Fallback to localStorage
           const storedSessions = JSON.parse(localStorage.getItem('studySessions') || '[]');
           setSessions(storedSessions);
         }
       } catch (error) {
         console.error('Error loading study sessions:', error);
-        // Fallback to localStorage
         const storedSessions = JSON.parse(localStorage.getItem('studySessions') || '[]');
         setSessions(storedSessions);
       } finally {
@@ -79,11 +70,7 @@ const StudyPlanner = () => {
 
   const handleAddSession = async () => {
     if (!formData.subject.trim() || !formData.startTime || !formData.duration) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Please fill in all required fields.", variant: "destructive" });
       return;
     }
 
@@ -96,8 +83,7 @@ const StudyPlanner = () => {
         notes: formData.notes
       };
 
-      if (apiAvailable && currentUser) {
-        // Save to API
+      if (currentUser) {
         const newSession = await studyAPI.create(newSessionData);
         setSessions([newSession, ...sessions]);
       } else {
@@ -131,8 +117,7 @@ const StudyPlanner = () => {
 
   const handleUpdateSession = async (id: string, updatedData: Partial<StudySession>) => {
     try {
-      if (apiAvailable && currentUser) {
-        // Update via API
+      if (currentUser) {
         const updatedSession = await studyAPI.update(id, updatedData);
         setSessions(sessions.map(session => session._id === id ? updatedSession : session));
       } else {
@@ -162,8 +147,7 @@ const StudyPlanner = () => {
 
   const handleDeleteSession = async (id: string) => {
     try {
-      if (apiAvailable && currentUser) {
-        // Delete via API
+      if (currentUser) {
         await studyAPI.delete(id);
         setSessions(sessions.filter(session => session._id !== id));
       } else {
@@ -241,25 +225,25 @@ const StudyPlanner = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
             <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
             <Badge variant="secondary">{sessions.length}</Badge>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
             <CardTitle className="text-sm font-medium">Total Study Time</CardTitle>
             <Badge variant="outline">{formatTime(getTotalStudyTime())}</Badge>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
             <CardTitle className="text-sm font-medium">Today's Study Time</CardTitle>
             <Badge variant="outline">{formatTime(getTodayStudyTime())}</Badge>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
             <CardTitle className="text-sm font-medium">Subjects</CardTitle>
             <Badge variant="outline">{Object.keys(getSubjectStats()).length}</Badge>
           </CardHeader>

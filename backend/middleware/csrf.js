@@ -12,9 +12,16 @@ const csrfProtection = (req, res, next) => {
     return next();
   }
 
-  // Skip CSRF for login and register endpoints temporarily for debugging
+  // Skip CSRF for login and register endpoints
   if (req.path.includes('/login') || req.path.includes('/register')) {
     console.log('Skipping CSRF for:', req.path);
+    return next();
+  }
+
+  // Skip CSRF for requests with a valid JWT auth token in a custom header.
+  // Custom headers (x-auth-token) cannot be set by cross-origin requests
+  // without CORS approval, so they inherently prevent CSRF attacks.
+  if (req.headers['x-auth-token']) {
     return next();
   }
 

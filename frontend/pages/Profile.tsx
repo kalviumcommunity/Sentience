@@ -42,7 +42,6 @@ const Profile = () => {
   const [showDataManagement, setShowDataManagement] = useState(false);
   const [storageUsage, setStorageUsage] = useState({ used: 0, total: 0, percentage: 0 });
   
-  // Form state for profile editing
   const [formData, setFormData] = useState({
     name: currentUser?.name || '',
     university: currentUser?.university || '',
@@ -50,7 +49,62 @@ const Profile = () => {
     year: currentUser?.year || '',
     bio: currentUser?.bio || '',
     gender: currentUser?.gender || 'neutral',
+    avatar: currentUser?.avatar || '',
   });
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file",
+        description: "Please upload an image file (JPEG, PNG, etc).",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 256;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height = Math.round((height * MAX_SIZE) / width);
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width = Math.round((width * MAX_SIZE) / height);
+            height = MAX_SIZE;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        
+        if (ctx) {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          const base64String = canvas.toDataURL('image/jpeg', 0.8);
+          setFormData(prev => ({ ...prev, avatar: base64String }));
+        }
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Redirect to login if user is not authenticated
   useEffect(() => {
@@ -72,21 +126,27 @@ const Profile = () => {
   const handleSaveProfile = () => {
     if (!currentUser) return;
     
-    function getAvgMoodForAvatar() {
-      try {
-        const moods: { mood: string }[] = JSON.parse(localStorage.getItem('moodEntries') || '[]');
-        if (!moods.length) return 'neutral';
-        const moodMap = { terrible: 1, bad: 2, neutral: 3, good: 4, excellent: 5 };
-        const avg = moods.reduce((sum, m) => sum + (moodMap[m.mood] || 3), 0) / moods.length;
-        if (avg <= 1.5) return 'terrible';
-        if (avg <= 2.5) return 'bad';
-        if (avg <= 3.5) return 'neutral';
-        if (avg <= 4.5) return 'good';
-        return 'excellent';
-      } catch { return 'neutral'; }
+    let finalAvatar = formData.avatar;
+    
+    const isDiceBear = finalAvatar.includes('api.dicebear.com');
+    if (isDiceBear || !finalAvatar) {
+      function getAvgMoodForAvatar() {
+        try {
+          const moods: { mood: string }[] = JSON.parse(localStorage.getItem('moodEntries') || '[]');
+          if (!moods.length) return 'neutral';
+          const moodMap = { terrible: 1, bad: 2, neutral: 3, good: 4, excellent: 5 };
+          const avg = moods.reduce((sum, m) => sum + (moodMap[m.mood] || 3), 0) / moods.length;
+          if (avg <= 1.5) return 'terrible';
+          if (avg <= 2.5) return 'bad';
+          if (avg <= 3.5) return 'neutral';
+          if (avg <= 4.5) return 'good';
+          return 'excellent';
+        } catch { return 'neutral'; }
+      }
+      finalAvatar = getAvatarUrl(formData.gender, getAvgMoodForAvatar());
     }
-    const avatar = getAvatarUrl(formData.gender, getAvgMoodForAvatar());
-    updateProfile({ ...formData, avatar });
+    
+    updateProfile({ ...formData, avatar: finalAvatar });
     setIsEditing(false);
   };
 
@@ -160,7 +220,7 @@ const Profile = () => {
                   className={cn(
                     "flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105",
                     isEditing 
-                      ? "text-red-600 bg-red-50 hover:bg-red-100 border border-red-200" 
+                      ? "text-destructive bg-destructive/10 hover:bg-destructive/20 border border-destructive/20" 
                       : "text-primary bg-primary/10 hover:bg-primary/20 border border-primary/20"
                   )}
                 >
@@ -174,13 +234,30 @@ const Profile = () => {
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/70 rounded-full blur-lg opacity-20 group-hover:opacity-30 transition-opacity"></div>
                     <img
-                      src={currentUser.avatar}
+                      src={isEditing ? formData.avatar : currentUser.avatar}
                       alt={currentUser.name}
-                      className="relative w-32 h-32 rounded-full border-4 border-background shadow-xl transition-transform duration-200 group-hover:scale-105"
+                      className="relative w-32 h-32 rounded-full border-4 border-background shadow-xl transition-transform duration-200 group-hover:scale-105 object-cover"
                     />
-                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
+                    {isEditing ? (
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="absolute bottom-0 right-0 w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-lg cursor-pointer z-10 pt-0.5"
+                        title="Change Profile Picture"
+                      >
+                        <Upload className="h-4 w-4" />
+                        <input 
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleImageUpload}
+                          accept="image/*"
+                          className="hidden"
+                        />
+                      </button>
+                    ) : (
+                      <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                        <User className="h-4 w-4 text-white" />
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -351,10 +428,10 @@ const Profile = () => {
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-3 p-4 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 transform hover:scale-105 w-full group"
+                  className="flex items-center gap-3 p-4 text-destructive hover:bg-destructive/10 rounded-lg transition-all duration-200 transform hover:scale-105 w-full group"
                 >
-                  <div className="p-2 bg-red-100 rounded-lg group-hover:bg-red-200 transition-colors">
-                    <LogOut className="h-4 w-4 text-red-600" />
+                  <div className="p-2 bg-destructive/10 rounded-lg group-hover:bg-destructive/20 transition-colors">
+                    <LogOut className="h-4 w-4 text-destructive" />
                   </div>
                   <span className="font-medium">Logout</span>
                 </button>
@@ -425,7 +502,7 @@ const Profile = () => {
                       
                       <button
                         onClick={handleClearData}
-                        className="flex items-center gap-2 w-full p-3 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 transform hover:scale-105 group"
+                        className="flex items-center gap-2 w-full p-3 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-all duration-200 transform hover:scale-105 group"
                       >
                         <Trash2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
                         Clear All Data
@@ -438,14 +515,14 @@ const Profile = () => {
 
             {/* Storage Warning */}
             {storageUsage.percentage > 80 && (
-              <div className="sentience-card p-6 border-l-4 border-yellow-400 bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-900/10 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+              <div className="sentience-card p-6 border-l-4 border-yellow-500 bg-yellow-500/10 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-yellow-200 dark:bg-yellow-900/40 rounded-lg">
-                    <AlertTriangle className="h-4 w-4 text-yellow-700 dark:text-yellow-300" />
+                  <div className="p-2 bg-yellow-500/20 rounded-lg">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                   </div>
-                  <span className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">Storage Warning</span>
+                  <span className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">Storage Warning</span>
                 </div>
-                <p className="text-sm text-yellow-700 dark:text-yellow-200/80 leading-relaxed">
+                <p className="text-sm text-yellow-700 dark:text-yellow-300/80 leading-relaxed">
                   Your storage is almost full. Consider exporting and clearing old data to free up space.
                 </p>
               </div>

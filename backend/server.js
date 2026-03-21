@@ -4,7 +4,15 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 dotenv.config();
-console.log("MongoDB URI:", process.env.MONGODB_URI);
+
+// Validate critical environment variables at startup
+const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(v => !process.env[v]);
+if (missingEnvVars.length > 0) {
+  console.error(`❌ Missing required environment variables: ${missingEnvVars.join(', ')}`);
+  process.exit(1);
+}
+
 import connectDB from './config/db.js';
 import { csrfProtection, csrfErrorHandler, generateToken } from './middleware/csrf.js';
 
@@ -81,15 +89,14 @@ const limiter = rateLimit({
 // Apply rate limiting to all routes
 app.use('/api/', limiter);
 
-// Add CSRF protection to all routes (BEFORE body parsers)
-app.use('/api/', csrfProtection);
-
-// Body parsing middleware with memory optimization (must run BEFORE CSRF)
+// Body parsing middleware
 app.use(express.json({ 
   limit: '5mb',
   verify: (req, res, buf) => {
     try {
-      JSON.parse(buf);
+      if (buf && buf.length > 0) {
+        JSON.parse(buf);
+      }
     } catch (e) {
       res.status(400).json({ message: 'Invalid JSON' });
       throw new Error('Invalid JSON');
@@ -97,6 +104,9 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+
+// Add CSRF protection AFTER body parsers so req.body is available
+app.use('/api/', csrfProtection);
 
 // Request timeout middleware
 app.use((req, res, next) => {
@@ -143,18 +153,6 @@ app.use(csrfErrorHandler);
 // Import error handler
 import errorHandler from './middleware/errorHandler.js';
 
-// Connect to MongoDB
-connectDB().then((connection) => {
-  if (connection) {
-    console.log('✅ MongoDB connection established');
-  } else {
-    console.log('⚠️ MongoDB connection failed, but server will continue');
-  }
-}).catch((error) => {
-  console.error('❌ MongoDB connection error:', error);
-  console.log('⚠️ Server will continue without MongoDB connection');
-});
-
 // Use Routes
 app.use('/api/users', userRoutes);
 app.use('/api/notes', noteRoutes);
@@ -168,7 +166,7 @@ app.use('/api/focus-sessions', focusRoutes);
 app.get('/api/csrf-token', generateToken);
 
 // Simple health check endpoint (no MongoDB dependency)
-app.get('/api/ping', (req, res) => {
+app.get('/api/ping', (_req, res) => {
   res.status(200).json({
     status: 'ok',
     message: 'Server is running',
@@ -238,7 +236,8 @@ const startMemoryMonitoring = () => {
     
     console.log(`📊 Memory Usage: RSS: ${memUsageMB.rss}MB, Heap: ${memUsageMB.heapUsed}MB/${memUsageMB.heapTotal}MB, External: ${memUsageMB.external}MB`);
     
-    // Force garbage collection if (global.gc) {
+    // Force garbage collection if available
+    if (global.gc) {
       global.gc();
     }
   }, 60000); // Every minute
@@ -249,6 +248,24 @@ startMemoryMonitoring();
 
 // Apply global error handler
 app.use(errorHandler);
+
+// Connect to MongoDB — server won't start without a successful connection
+connectDB().then((connection) => {
+  if (!connection) {
+    console.error('❌ Failed to connect to MongoDB. Exiting.');
+    process.exit(1);
+  }
+  console.log('✅ MongoDB connection established');
+
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
+  });
+}).catch((error) => {
+  console.error('❌ MongoDB connection error:', error);
+  process.exit(1);
+});
 
 // Graceful shutdown
 const gracefulShutdown = (signal) => {
@@ -267,11 +284,3 @@ const gracefulShutdown = (signal) => {
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🔧 CORS fixes deployed: ${new Date().toISOString()}`);
-});

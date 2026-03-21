@@ -202,3 +202,4 @@ coverage/
 
 # Local development
 *.local
+.gitnexus

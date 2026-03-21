@@ -250,38 +250,38 @@ const NotesHub = () => {
   };
 
   // Handle like/unlike a note
-  const handleLikeNote = (noteId: string) => {
+  const handleLikeNote = async (noteId: string) => {
     if (!currentUser) {
       navigate('/login');
       return;
     }
 
+    // Optimistic update
     const updatedNotes = notes.map(note => {
       if (note.id === noteId) {
         const likedBy = note.likedBy || [];
         const isLiked = likedBy.includes(currentUser.id);
-        
-        if (isLiked) {
-          // Unlike
-          return {
-            ...note,
-            likes: note.likes - 1,
-            likedBy: likedBy.filter(id => id !== currentUser.id)
-          };
-        } else {
-          // Like
-          return {
-            ...note,
-            likes: note.likes + 1,
-            likedBy: [...likedBy, currentUser.id]
-          };
-        }
+        return {
+          ...note,
+          likes: isLiked ? note.likes - 1 : note.likes + 1,
+          likedBy: isLiked
+            ? likedBy.filter(id => id !== currentUser.id)
+            : [...likedBy, currentUser.id]
+        };
       }
       return note;
     });
-
     setNotes(updatedNotes);
-    localStorage.setItem('global_notes', JSON.stringify(updatedNotes));
+
+    // Persist to API
+    try {
+      const { likeNote } = await import('@/services/noteService');
+      await likeNote(noteId);
+    } catch (error) {
+      // Revert optimistic update on failure
+      setNotes(notes);
+      toast({ title: "Failed to like note", description: "Please try again.", variant: "destructive" });
+    }
   };
 
   // Handle adding a comment
@@ -787,7 +787,18 @@ ${note.content}`;
                                 </span>
                                 {currentUser?.id === comment.author.id && (
                                   <button
-                                    onClick={() => deleteComment(comment.id)}
+                                    onClick={async () => {
+                                      const ok = await deleteComment(comment.id);
+                                      if (ok) {
+                                        setComments(prev => ({
+                                          ...prev,
+                                          [noteId]: (prev[noteId] || []).filter(c => c.id !== comment.id)
+                                        }));
+                                        setNotes(prev => prev.map(n =>
+                                          n.id === noteId ? { ...n, comments: n.comments - 1 } : n
+                                        ));
+                                      }
+                                    }}
                                     className="text-xs text-red-500 hover:text-red-700"
                                   >
                                     Delete

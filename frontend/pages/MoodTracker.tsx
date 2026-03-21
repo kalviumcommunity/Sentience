@@ -43,7 +43,6 @@ const MoodTracker = () => {
   const [moodEntries, setMoodEntries] = useState<MoodEntry[]>([]);
   const [isAddingEntry, setIsAddingEntry] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [apiAvailable, setApiAvailable] = useState(false);
   const [activeTab, setActiveTab] = useState('tracker');
 
   // Form state
@@ -53,26 +52,19 @@ const MoodTracker = () => {
     date: new Date().toISOString().split('T')[0]
   });
 
-  // Check API availability and load mood entries
   useEffect(() => {
     const initializeMoodEntries = async () => {
       try {
-        // Check if API is available
-        const response = await fetch('https://sentience.onrender.com/api/health');
-        setApiAvailable(response.ok);
-        
-        if (response.ok && currentUser) {
-          // Load mood entries from API
+        if (currentUser) {
           const apiEntries = await moodAPI.getAll();
           setMoodEntries(apiEntries);
+          setApiAvailable(true);
         } else {
-          // Fallback to localStorage
           const storedEntries = JSON.parse(localStorage.getItem('moodEntries') || '[]');
           setMoodEntries(storedEntries);
         }
       } catch (error) {
         console.error('Error loading mood entries:', error);
-        // Fallback to localStorage
         const storedEntries = JSON.parse(localStorage.getItem('moodEntries') || '[]');
         setMoodEntries(storedEntries);
       } finally {
@@ -99,8 +91,7 @@ const MoodTracker = () => {
         date: formData.date
       };
 
-      if (apiAvailable && currentUser) {
-        // Save to API
+      if (currentUser) {
         const newEntry = await moodAPI.create(newEntryData);
         setMoodEntries([newEntry, ...moodEntries]);
       } else {
@@ -134,7 +125,7 @@ const MoodTracker = () => {
 
   const handleDeleteEntry = async (id: string) => {
     try {
-      if (apiAvailable && currentUser) {
+      if (currentUser) {
         await moodAPI.delete(id);
       }
       
@@ -245,8 +236,10 @@ const MoodTracker = () => {
       : 0;
     
     let moodTrend: 'improving' | 'declining' | 'stable' = 'stable';
-    if (recentAverage > olderAverage + 0.5) moodTrend = 'improving';
-    else if (recentAverage < olderAverage - 0.5) moodTrend = 'declining';
+    if (recentEntries.length > 0 && olderEntries.length > 0) {
+      if (recentAverage > olderAverage + 0.5) moodTrend = 'improving';
+      else if (recentAverage < olderAverage - 0.5) moodTrend = 'declining';
+    }
     
     // Find most common mood
     const moodCounts = moodEntries.reduce((acc, entry) => {
@@ -254,9 +247,10 @@ const MoodTracker = () => {
       return acc;
     }, {} as Record<string, number>);
     
-    const mostCommonMood = Object.entries(moodCounts).reduce((a, b) => 
-      moodCounts[a[0]] > moodCounts[b[0]] ? a : b
-    )[0];
+    const moodCountEntries = Object.entries(moodCounts);
+    const mostCommonMood = moodCountEntries.length > 0
+      ? moodCountEntries.reduce((a, b) => moodCounts[a[0]] > moodCounts[b[0]] ? a : b)[0]
+      : 'neutral';
     
     // Calculate streak
     let streakDays = 0;
@@ -281,10 +275,12 @@ const MoodTracker = () => {
     }, {} as Record<number, number>);
     
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const mostActiveDay = Object.entries(dayOfWeekCounts).reduce((a, b) => 
-      dayOfWeekCounts[parseInt(a[0])] > dayOfWeekCounts[parseInt(b[0])] ? a : b
-    );
-    const weeklyPattern = days[parseInt(mostActiveDay[0])];
+    const dayEntries = Object.entries(dayOfWeekCounts);
+    const weeklyPattern = dayEntries.length > 0
+      ? days[parseInt(dayEntries.reduce((a, b) =>
+          dayOfWeekCounts[parseInt(a[0])] > dayOfWeekCounts[parseInt(b[0])] ? a : b
+        )[0])]
+      : 'N/A';
     
     // Generate recommendations
     const recommendations = [];

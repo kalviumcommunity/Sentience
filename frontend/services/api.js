@@ -57,10 +57,12 @@ const authRequest = async (endpoint, options = {}, retries = 3) => {
       return await response.json();
     } catch (error) {
       if (attempt === retries) {
+        console.error(`[authRequest] Failed after ${retries} attempts:`, error);
         throw error;
       }
       
       // Wait before retrying
+      console.warn(`[authRequest] Attempt ${attempt} failed, retrying...`, error);
       await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
     }
   }

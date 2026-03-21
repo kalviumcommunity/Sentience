@@ -23,6 +23,10 @@ router.post('/', auth, async (req, res) => {
   const { title, description, priority, status, dueDate, estimatedTime, tags } = req.body;
 
   try {
+    const parsedTags = Array.isArray(tags)
+      ? tags.map(t => t.trim()).filter(Boolean)
+      : (tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : []);
+
     const newTask = new Task({
       user: req.user.id,
       title,
@@ -31,7 +35,7 @@ router.post('/', auth, async (req, res) => {
       status,
       dueDate: dueDate ? new Date(dueDate) : null,
       estimatedTime,
-      tags: tags ? tags.split(',').map(tag => tag.trim()) : []
+      tags: parsedTags
     });
 
     const task = await newTask.save();
@@ -67,7 +71,11 @@ router.put('/:id', auth, async (req, res) => {
     if (status !== undefined) task.status = status;
     if (dueDate !== undefined) task.dueDate = dueDate ? new Date(dueDate) : null;
     if (estimatedTime !== undefined) task.estimatedTime = estimatedTime;
-    if (tags !== undefined) task.tags = tags.split(',').map(tag => tag.trim());
+    if (tags !== undefined) {
+      task.tags = Array.isArray(tags)
+        ? tags.map(t => t.trim()).filter(Boolean)
+        : tags.split(',').map(t => t.trim()).filter(Boolean);
+    }
     
     await task.save();
     res.json(task);

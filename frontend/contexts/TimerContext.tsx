@@ -93,16 +93,17 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
 
   const [apiAvailable, setApiAvailable] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const oscillatorRef = useRef<OscillatorNode | null>(null);
+  const noiseSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
 
   // Check API availability
   useEffect(() => {
     const checkAPI = async () => {
       try {
-        const response = await fetch('https://sentience.onrender.com/api/health');
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://sentience.onrender.com/api';
+        const response = await fetch(`${apiUrl}/health`);
         setApiAvailable(response.ok);
-      } catch (error) {
+      } catch {
         setApiAvailable(false);
       }
     };
@@ -118,20 +119,21 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
 
     try {
       if (apiAvailable && currentUser) {
-        // Save to API
         await focusAPI.create(sessionData);
       } else {
-        // Save to localStorage
         const session: FocusSession = {
           _id: Date.now().toString(),
           ...sessionData
         };
         const existingSessions: FocusSession[] = JSON.parse(localStorage.getItem('focusSessions') || '[]');
-        const updatedSessions = [...existingSessions, session];
-        localStorage.setItem('focusSessions', JSON.stringify(updatedSessions));
+        localStorage.setItem('focusSessions', JSON.stringify([...existingSessions, session]));
       }
 
-      // Trigger data update event for Analytics
+      // Accumulate total focus time for work sessions only (in seconds)
+      if (type === 'work') {
+        setTotalFocusTime(prev => prev + duration * 60);
+      }
+
       window.dispatchEvent(new CustomEvent('dataUpdated'));
     } catch (error) {
       console.error('Error saving focus session:', error);
@@ -175,17 +177,32 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
         audioContextRef.current.resume();
       }
 
-      if (!oscillatorRef.current) {
-        oscillatorRef.current = audioContextRef.current.createOscillator();
+      if (!noiseSourceRef.current) {
+        // Generate 2 seconds of white noise
+        const bufferSize = audioContextRef.current.sampleRate * 2;
+        const buffer = audioContextRef.current.createBuffer(1, bufferSize, audioContextRef.current.sampleRate);
+        const data = buffer.getChannelData(0);
+        
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1; // white noise sample [-1, 1]
+        }
+        
+        noiseSourceRef.current = audioContextRef.current.createBufferSource();
+        noiseSourceRef.current.buffer = buffer;
+        noiseSourceRef.current.loop = true; // loop seamlessly
+        
+        // Add a lowpass filter to make it sound like pleasant "brown noise" or rainfall
+        const filter = audioContextRef.current.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 800;
+        
         gainNodeRef.current = audioContextRef.current.createGain();
+        gainNodeRef.current.gain.setValueAtTime(0.05, audioContextRef.current.currentTime);
         
-        oscillatorRef.current.type = 'sine';
-        oscillatorRef.current.frequency.setValueAtTime(432, audioContextRef.current.currentTime); // A4 note
-        gainNodeRef.current.gain.setValueAtTime(0.1, audioContextRef.current.currentTime);
-        
-        oscillatorRef.current.connect(gainNodeRef.current);
+        noiseSourceRef.current.connect(filter);
+        filter.connect(gainNodeRef.current);
         gainNodeRef.current.connect(audioContextRef.current.destination);
-        oscillatorRef.current.start();
+        noiseSourceRef.current.start();
       }
     } else {
       stopAmbientSound();
@@ -198,9 +215,10 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
   }, [isActive, isWorking, ambientSoundEnabled, saveFocusSession]);
 
   const stopAmbientSound = () => {
-    if (oscillatorRef.current) {
-      oscillatorRef.current.stop();
-      oscillatorRef.current = null;
+    if (noiseSourceRef.current) {
+      noiseSourceRef.current.stop();
+      noiseSourceRef.current.disconnect();
+      noiseSourceRef.current = null;
     }
     if (gainNodeRef.current) {
       gainNodeRef.current.disconnect();
@@ -272,7 +290,6 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
 
   const startTimer = () => {
     setIsActive(true);
-    setTotalFocusTime((prev) => prev + 1);
   };
 
   const pauseTimer = () => {

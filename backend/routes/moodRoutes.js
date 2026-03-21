@@ -1,5 +1,6 @@
 import express from 'express';
 const router = express.Router();
+import { body, validationResult } from 'express-validator';
 import MoodEntry from '../models/MoodEntry.js';
 import auth from '../middleware/auth.js';
 
@@ -19,7 +20,17 @@ router.get('/', auth, async (req, res) => {
 // @route   POST api/mood
 // @desc    Create a new mood entry
 // @access  Private
-router.post('/', auth, async (req, res) => {
+router.post('/', [
+  auth,
+  body('mood').isIn(['terrible', 'bad', 'neutral', 'good', 'excellent']).withMessage('Invalid mood value'),
+  body('note').optional().trim().isLength({ max: 500 }).withMessage('Note must be less than 500 characters'),
+  body('date').optional().isISO8601().withMessage('Invalid date format')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
+  }
+
   const { mood, note, date } = req.body;
 
   try {
@@ -34,7 +45,7 @@ router.post('/', auth, async (req, res) => {
     res.json(moodEntry);
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Server error');
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

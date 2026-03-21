@@ -50,7 +50,6 @@ const TaskTracker = () => {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [apiAvailable, setApiAvailable] = useState(false);
-
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -64,12 +63,10 @@ const TaskTracker = () => {
   useEffect(() => {
     const initializeTasks = async () => {
       try {
-        const response = await fetch('https://sentience.onrender.com/api/health');
-        setApiAvailable(response.ok);
-
-        if (response.ok && currentUser) {
+        if (currentUser) {
           const apiTasks = await taskAPI.getAll();
           setTasks(apiTasks);
+          setApiAvailable(true);
         } else {
           const storedTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
           setTasks(storedTasks);
@@ -104,7 +101,6 @@ const TaskTracker = () => {
       return;
     }
     
-    // Sanitize task data
     const sanitizedTaskData = {
       ...newTaskData,
       title: sanitizeTaskContent(newTaskData.title || ''),
@@ -112,7 +108,7 @@ const TaskTracker = () => {
     };
     
     try {
-      if (apiAvailable && currentUser) {
+      if (currentUser) {
         const newTask = await taskAPI.create(sanitizedTaskData);
         setTasks([newTask, ...tasks]);
       } else {
@@ -139,7 +135,7 @@ const TaskTracker = () => {
 
   const handleUpdateTask = async (id: string, updatedData: Partial<Task>) => {
     try {
-      if (apiAvailable && currentUser) {
+      if (currentUser) {
         const updatedTask = await taskAPI.update(id, updatedData);
         setTasks(tasks.map(task => (task._id === id ? updatedTask : task)));
       } else {
@@ -172,7 +168,7 @@ const TaskTracker = () => {
 
   const handleDeleteTask = async (id: string) => {
     try {
-      if (apiAvailable && currentUser) {
+      if (currentUser) {
         await taskAPI.delete(id);
         setTasks(tasks.filter(task => task._id !== id));
       } else {
@@ -219,25 +215,25 @@ const TaskTracker = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
             <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
             <Badge variant="secondary">{tasks.length}</Badge>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
             <CardTitle className="text-sm font-medium">To Do</CardTitle>
             <Badge variant="outline">{getStatusCount('todo')}</Badge>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
             <CardTitle className="text-sm font-medium">In Progress</CardTitle>
             <Badge variant="outline">{getStatusCount('in_progress')}</Badge>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4">
             <CardTitle className="text-sm font-medium">Completed</CardTitle>
             <Badge variant="outline">{getStatusCount('done')}</Badge>
           </CardHeader>

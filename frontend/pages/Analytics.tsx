@@ -79,6 +79,8 @@ interface AnalyticsInsights {
   overallWellness: number;
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://sentience.onrender.com/api';
+
 const Analytics = () => {
   const { currentUser } = useUser();
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'semester'>('week');
@@ -108,21 +110,9 @@ const Analytics = () => {
   useEffect(() => {
     const initializeData = async () => {
       try {
-        // Check API is up
-        const response = await fetch('https://sentience.onrender.com/api/health');
-        setApiAvailable(response.ok);
-        
         if (currentUser) {
-          if (!response.ok) {
-            toast({
-              title: 'Analytics unavailable',
-              description: 'Server is unreachable. Please try again shortly.',
-              variant: 'destructive'
-            });
-            setData({ tasks: [], moodEntries: [], studySessions: [], focusSessions: [] });
-            return;
-          }
-          // Always load user-specific data from API when logged in
+          // Load data directly — don't gate on health check
+          setApiAvailable(true);
           const [apiTasks, apiMoodEntries, apiStudySessions, apiFocusSessions] = await Promise.all([
             taskAPI.getAll().catch(() => []),
             moodAPI.getAll().catch(() => []),
@@ -141,7 +131,6 @@ const Analytics = () => {
           const storedMoodEntries = JSON.parse(localStorage.getItem('moodEntries') || '[]');
           const storedStudySessions = JSON.parse(localStorage.getItem('studySessions') || '[]');
           const storedFocusSessions = JSON.parse(localStorage.getItem('focusSessions') || '[]');
-          
           setData({
             tasks: storedTasks,
             moodEntries: storedMoodEntries,
@@ -226,10 +215,12 @@ const Analytics = () => {
       });
 
     let weeklyTrend: 'improving' | 'declining' | 'stable' = 'stable';
-    if (recentData.length > previousWeekData.length * 1.2) {
-      weeklyTrend = 'improving';
-    } else if (recentData.length < previousWeekData.length * 0.8) {
-      weeklyTrend = 'declining';
+    if (previousWeekData.length > 0) {
+      if (recentData.length > previousWeekData.length * 1.2) {
+        weeklyTrend = 'improving';
+      } else if (recentData.length < previousWeekData.length * 0.8) {
+        weeklyTrend = 'declining';
+      }
     }
 
     // Calculate additional metrics
@@ -274,7 +265,7 @@ const Analytics = () => {
   const handleDataUpdate = async () => {
     setIsLoading(true);
     try {
-      if (apiAvailable && currentUser) {
+      if (currentUser) {
         const [apiTasks, apiMoodEntries, apiStudySessions, apiFocusSessions] = await Promise.all([
           taskAPI.getAll().catch(() => []),
           moodAPI.getAll().catch(() => []),
@@ -774,32 +765,32 @@ const Analytics = () => {
               <CardContent>
                 <div className="space-y-3">
                   {insights.overallWellness < 70 && (
-                    <div className="flex items-start gap-3 p-3 bg-yellow-50 rounded-lg">
-                      <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                    <div className="flex items-start gap-3 p-3 bg-yellow-50 dark:bg-yellow-500/10 rounded-lg">
+                      <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5" />
                       <span className="text-sm">Focus on building consistent daily habits</span>
                     </div>
                   )}
                   {insights.studyEfficiency < 70 && (
-                    <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                      <BookOpen className="h-4 w-4 text-blue-600 mt-0.5" />
+                    <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-500/10 rounded-lg">
+                      <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5" />
                       <span className="text-sm">Try the Pomodoro technique for better study sessions</span>
                     </div>
                   )}
                   {insights.focusQuality < 70 && (
-                    <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
-                      <Target className="h-4 w-4 text-green-600 mt-0.5" />
+                    <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-500/10 rounded-lg">
+                      <Target className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5" />
                       <span className="text-sm">Minimize distractions during focus sessions</span>
                     </div>
                   )}
                   {insights.moodStability < 70 && (
-                    <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
-                      <Heart className="h-4 w-4 text-purple-600 mt-0.5" />
+                    <div className="flex items-start gap-3 p-3 bg-purple-50 dark:bg-purple-500/10 rounded-lg">
+                      <Heart className="h-4 w-4 text-purple-600 dark:text-purple-400 mt-0.5" />
                       <span className="text-sm">Practice mindfulness and stress management</span>
                     </div>
                   )}
                   {insights.overallWellness >= 80 && (
-                    <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
-                      <Trophy className="h-4 w-4 text-green-600 mt-0.5" />
+                    <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-500/10 rounded-lg">
+                      <Trophy className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5" />
                       <span className="text-sm">Excellent! Keep up the great work</span>
                     </div>
                   )}
