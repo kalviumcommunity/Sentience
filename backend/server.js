@@ -90,19 +90,7 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Body parsing middleware
-app.use(express.json({ 
-  limit: '5mb',
-  verify: (req, res, buf) => {
-    try {
-      if (buf && buf.length > 0) {
-        JSON.parse(buf);
-      }
-    } catch (e) {
-      res.status(400).json({ message: 'Invalid JSON' });
-      throw new Error('Invalid JSON');
-    }
-  }
-}));
+app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 // Add CSRF protection AFTER body parsers so req.body is available
