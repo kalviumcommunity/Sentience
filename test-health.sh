@@ -14,7 +14,8 @@ echo ""
 echo "🔍 MongoDB Connection Test..."
 node -e "
 const mongoose = require('mongoose');
-const uri = 'mongodb+srv://uday:uday@cluster0.n2vzkur.mongodb.net/student-sentience?retryWrites=true&w=majority&appName=Cluster0';
+const uri = process.env.MONGODB_URI;
+if (!uri) { console.error('MONGODB_URI not set'); process.exit(1); }
 
 console.log('🔄 Testing MongoDB connection...');
 mongoose.connect(uri, {

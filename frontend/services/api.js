@@ -1,5 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'https://sentience-xq1s.onrender.com/api';
-
+import { API_BASE_URL } from '@/config';
 // Helper function to make authenticated requests with retry and rate limiting
 const authRequest = async (endpoint, options = {}, retries = 3) => {
   // Import rate limiter and CSRF protection dynamically to avoid circular dependencies
@@ -17,7 +16,7 @@ const authRequest = async (endpoint, options = {}, retries = 3) => {
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const response = await fetch(`${API_URL}${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers,
         credentials: 'include'
@@ -117,4 +116,4 @@ export const focusAPI = {
 };
 
 // Health check
-export const healthCheck = () => fetch(`${API_URL}/health`, { credentials: 'include' }).then(res => res.json()); 
+export const healthCheck = () => fetch(`${API_BASE_URL}/health`, { credentials: 'include' }).then(res => res.json()); 

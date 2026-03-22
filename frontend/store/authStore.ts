@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { StorageService } from '@/services/StorageService';
 import { apiClient } from '@/services/apiClient';
 import { toast } from '@/hooks/use-toast';
+import { API_BASE_URL } from '@/config';
 
 export interface User {
   id: string;
@@ -58,7 +59,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initializeAuth: async () => {
     set({ isLoading: true });
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://sentience-xq1s.onrender.com/api'}/health`, {
+      const response = await fetch(`${API_BASE_URL}/health`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

@@ -19,6 +19,7 @@ import {
 import { useUser } from '@/contexts/UserContext';
 import { taskAPI, moodAPI, studyAPI, focusAPI } from '@/services/api';
 import { toast } from '@/hooks/use-toast';
+import { API_BASE_URL } from '@/config';
 
 // Type definitions
 interface MoodEntry {
@@ -78,8 +79,6 @@ interface AnalyticsInsights {
   moodStability: number;
   overallWellness: number;
 }
-
-const API_URL = import.meta.env.VITE_API_URL || 'https://sentience-xq1s.onrender.com/api';
 
 const Analytics = () => {
   const { currentUser } = useUser();

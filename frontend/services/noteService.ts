@@ -1,7 +1,6 @@
 
 import { toast } from '@/hooks/use-toast';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://sentience-xq1s.onrender.com/api';
+import { API_BASE_URL } from '@/config';
 
 export interface Note {
   id: string;

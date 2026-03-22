@@ -1,11 +1,10 @@
-const API_URL = import.meta.env.VITE_API_URL || 'https://sentience-xq1s.onrender.com/api';
-
+import { API_BASE_URL } from '@/config';
 export const apiClient = {
   async get<T>(endpoint: string): Promise<T> {
     const { csrfProtection } = await import('@/utils/csrf');
     const headers = await csrfProtection.addTokenToHeaders({});
     
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -26,7 +25,7 @@ export const apiClient = {
     const { csrfProtection } = await import('@/utils/csrf');
     const headers = await csrfProtection.addTokenToHeaders({});
     
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -48,7 +47,7 @@ export const apiClient = {
     const { csrfProtection } = await import('@/utils/csrf');
     const headers = await csrfProtection.addTokenToHeaders({});
     
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
