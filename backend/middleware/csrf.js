@@ -12,8 +12,13 @@ const csrfProtection = (req, res, next) => {
     return next();
   }
 
-  // Skip CSRF for login and register endpoints
-  if (req.path.includes('/login') || req.path.includes('/register')) {
+  // Skip CSRF for login, register, and password reset endpoints
+  if (
+    req.path.includes('/login') || 
+    req.path.includes('/register') || 
+    req.path.includes('/forgot-password') || 
+    req.path.includes('/reset-password')
+  ) {
     console.log('Skipping CSRF for:', req.path);
     return next();
   }
