@@ -51,8 +51,9 @@ const userSchema = new mongoose.Schema({
     default: Date.now
   }
 }, {
-  // Add this to handle existing indexes
-  strict: false
+  // Enforce strict schema to prevent arbitrary field injection
+  strict: true,
+  timestamps: true // Adding timestamps is a good practice instead of manual createdAt
 });
 
 export default mongoose.model('User', userSchema);

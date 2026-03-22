@@ -1,22 +1,48 @@
 version: '3.8'
 
 services:
-  backend:
-    build: .
+  mongodb:
+    image: mongo:latest
+    container_name: sentience-mongodb
     ports:
-      - "10000:10000"
-    environment:
-      - NODE_ENV=development
-      - PORT=10000
-      - MONGODB_URI=mongodb+srv://uday:uday@cluster0.n2vzkur.mongodb.net/student-sentience?retryWrites=true&w=majority&appName=Cluster0
-      - JWT_SECRET=your-jwt-secret-here
+      - "27017:27017"
     volumes:
-      - ./backend:/app/backend
-      - /app/backend/node_modules
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:10000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      - mongodb_data:/data/db
+    networks:
+      - sentience-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sentience-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - MONGODB_URI=mongodb://mongodb:27017/student-sentience
+      - JWT_SECRET=${JWT_SECRET:-super_secret_jwt_key}
+      - NODE_ENV=development
+    depends_on:
+      - mongodb
+    networks:
+      - sentience-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sentience-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - sentience-network
+
+networks:
+  sentience-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:

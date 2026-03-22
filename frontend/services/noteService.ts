@@ -23,23 +23,17 @@ export interface Note {
   downloads: number;
 }
 
-// Helper function to get auth token from localStorage
-const getAuthToken = () => {
-  return localStorage.getItem('authToken');
-};
-
 // Helper function to make authenticated requests
 const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {
-  const token = getAuthToken();
   const headers = {
     'Content-Type': 'application/json',
-    ...(token && { 'x-auth-token': token }),
     ...options.headers,
   };
 
   return fetch(url, {
     ...options,
     headers,
+    credentials: 'include'
   });
 };
 
@@ -84,11 +78,6 @@ export const getNotes = async (): Promise<Note[]> => {
 
 export const getMyNotes = async (): Promise<Note[]> => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      throw new Error('Authentication token not found');
-    }
-
     const response = await makeAuthenticatedRequest(`${API_BASE_URL}/notes/my-notes`);
     
     if (!response.ok) {
@@ -221,16 +210,6 @@ export const createNote = async (noteData: {
   privacy: 'private' | 'global';
 }): Promise<Note | null> => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to create notes",
-        variant: "destructive"
-      });
-      return null;
-    }
-
     const response = await makeAuthenticatedRequest(`${API_BASE_URL}/notes`, {
       method: 'POST',
       body: JSON.stringify({
@@ -294,16 +273,6 @@ export const updateNote = async (
   }>
 ): Promise<Note | null> => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to update notes",
-        variant: "destructive"
-      });
-      return null;
-    }
-
     const updateData: Record<string, unknown> = {};
     
     if (noteData.title !== undefined) updateData.title = noteData.title;
@@ -361,16 +330,6 @@ export const updateNote = async (
 
 export const likeNote = async (noteId: string): Promise<Note | null> => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to like notes",
-        variant: "destructive"
-      });
-      return null;
-    }
-
     const response = await makeAuthenticatedRequest(`${API_BASE_URL}/notes/like/${noteId}`, {
       method: 'PUT',
     });
@@ -412,16 +371,6 @@ export const likeNote = async (noteId: string): Promise<Note | null> => {
 
 export const deleteNote = async (noteId: string): Promise<boolean> => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to delete notes",
-        variant: "destructive"
-      });
-      return false;
-    }
-
     const response = await makeAuthenticatedRequest(`${API_BASE_URL}/notes/${noteId}`, {
       method: 'DELETE',
     });

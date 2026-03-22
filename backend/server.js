@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -24,6 +25,7 @@ import taskRoutes from './routes/taskRoutes.js';
 import moodRoutes from './routes/moodRoutes.js';
 import studyRoutes from './routes/studyRoutes.js';
 import focusRoutes from './routes/focusRoutes.js';
+import syncRoutes from './routes/syncRoutes.js';
 
 
 
@@ -91,7 +93,18 @@ app.use('/api/', limiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '5mb' }));
+// Intercept JSON syntax errors gracefully
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ 
+      status: 'error',
+      message: 'Invalid JSON payload received' 
+    });
+  }
+  next(err);
+});
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+app.use(cookieParser());
 
 // Add CSRF protection AFTER body parsers so req.body is available
 app.use('/api/', csrfProtection);
@@ -149,6 +162,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/mood', moodRoutes);
 app.use('/api/study-sessions', studyRoutes);
 app.use('/api/focus-sessions', focusRoutes);
+app.use('/api/sync', syncRoutes);
 
 // CSRF Token Generation
 app.get('/api/csrf-token', generateToken);

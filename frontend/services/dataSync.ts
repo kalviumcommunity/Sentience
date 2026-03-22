@@ -1,4 +1,5 @@
 import { toast } from '../hooks/use-toast.js';
+import { apiClient } from './apiClient.js';
 
 export interface SyncData {
   tasks: unknown[];
@@ -203,57 +204,56 @@ class DataSyncService {
     if (!this.isOnline) return;
     
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) return;
+      const user = localStorage.getItem('currentUser');
+      if (!user) return; // Only sync if user is logged in
 
-      const headers = {
-        'Content-Type': 'application/json',
-        'x-auth-token': token
-      };
+      // Extract pending tasks and notes
+      const localTasks = this.loadData<any[]>('tasks', []);
+      const pendingTasks = localTasks.filter(item => item.syncStatus === 'pending' || !item._id || item._id.startsWith('local_') || item._id.length < 24);
 
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://sentience.onrender.com/api';
+      const localNotes = this.loadData<any[]>('notes', []);
+      const pendingNotes = localNotes.filter(item => item.syncStatus === 'pending' || !item._id || item._id.startsWith('local_') || item._id.length < 24);
 
-      // Sync tasks
-      const localTasks = this.loadData('tasks', []);
-      if (localTasks.length > 0) {
+      // Only sync if there is pending data
+      if (pendingTasks.length > 0 || pendingNotes.length > 0) {
+        console.log(`Syncing ${pendingTasks.length} tasks and ${pendingNotes.length} notes...`);
         try {
-          await fetch(`${API_BASE_URL}/tasks`, { headers });
+          const result = await apiClient.post<{ tasks: any[], notes: any[] }>('/sync', {
+            tasks: pendingTasks,
+            notes: pendingNotes
+          });
+
+          // Server returns the reconciled source of truth
+          if (result.tasks) {
+            this.saveData('tasks', result.tasks.map(t => ({...t, syncStatus: 'synced'})));
+          }
+          if (result.notes) {
+            this.saveData('notes', result.notes.map(n => ({...n, syncStatus: 'synced'})));
+          }
+          
+          toast({
+            title: "Sync complete",
+            description: "Your offline changes have been saved to the server."
+          });
         } catch (error) {
-          console.log('Tasks already synced or API unavailable');
+          console.error('API sync request failed:', error);
+        }
+      } else {
+        console.log('No pending items to sync.');
+        // Optionally fetch the latest data from server to keep local copy fresh
+        try {
+          const [serverTasks, serverNotes] = await Promise.all([
+             apiClient.get<any[]>('/tasks').catch(() => null),
+             apiClient.get<any[]>('/notes/my-notes').catch(() => null)
+          ]);
+          if (serverTasks) this.saveData('tasks', serverTasks.map(t => ({...t, syncStatus: 'synced'})));
+          if (serverNotes) this.saveData('notes', serverNotes.map(n => ({...n, syncStatus: 'synced'})));
+        } catch (e) {
+          /* ignore background fetch errors */
         }
       }
 
-      // Sync mood entries
-      const localMoodEntries = this.loadData('moodEntries', []);
-      if (localMoodEntries.length > 0) {
-        try {
-          await fetch(`${API_BASE_URL}/mood`, { headers });
-        } catch (error) {
-          console.log('Mood entries already synced or API unavailable');
-        }
-      }
-
-      // Sync study sessions
-      const localStudySessions = this.loadData('studySessions', []);
-      if (localStudySessions.length > 0) {
-        try {
-          await fetch(`${API_BASE_URL}/study-sessions`, { headers });
-        } catch (error) {
-          console.log('Study sessions already synced or API unavailable');
-        }
-      }
-
-      // Sync focus sessions
-      const localFocusSessions = this.loadData('focusSessions', []);
-      if (localFocusSessions.length > 0) {
-        try {
-          await fetch(`${API_BASE_URL}/focus-sessions`, { headers });
-        } catch (error) {
-          console.log('Focus sessions already synced or API unavailable');
-        }
-      }
-
-      console.log('Data sync completed');
+      console.log('Data sync cycle completed');
     } catch (error) {
       console.error('Sync failed:', error);
     }

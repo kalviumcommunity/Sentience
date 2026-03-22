@@ -2,8 +2,8 @@ import jwt from 'jsonwebtoken';
 import { isTokenBlacklisted } from '../utils/tokenManager.js';
 
 const auth = async function(req, res, next) {
-  // Get token from header (support both x-auth-token and Authorization: Bearer)
-  let token = req.header('x-auth-token');
+  // Get token from cookie first, fallback to header
+  let token = req.cookies?.authToken || req.header('x-auth-token');
 
   // If not found, try Authorization header
   if (!token) {

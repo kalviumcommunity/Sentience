@@ -5,6 +5,8 @@ import jwt from 'jsonwebtoken';
 import Note from '../models/Note.js';
 import User from '../models/User.js';
 import auth from '../middleware/auth.js';
+import catchAsync from '../utils/catchAsync.js';
+import AppError from '../utils/AppError.js';
 
 // IMPORTANT: Static routes (/global, /my-notes, /like/:id) MUST be defined
 // before the dynamic /:id route, otherwise Express matches them as IDs first.
@@ -12,7 +14,7 @@ import auth from '../middleware/auth.js';
 // @route   GET api/notes/global
 // @desc    Get all global notes
 // @access  Public
-router.get('/global', async (req, res) => {
+router.get('/global', catchAsync(async (req, res, next) => {
   try {
     const notes = await Note.find({ privacy: 'global' }).sort({ createdAt: -1 });
     res.json(notes);
@@ -20,12 +22,12 @@ router.get('/global', async (req, res) => {
     console.error(err.message);
     res.status(500).json({ message: 'Server error' });
   }
-});
+}));
 
 // @route   GET api/notes/my-notes
 // @desc    Get current user's notes
 // @access  Private
-router.get('/my-notes', auth, async (req, res) => {
+router.get('/my-notes', auth, catchAsync(async (req, res, next) => {
   try {
     const notes = await Note.find({ 'author.id': req.user.id }).sort({ createdAt: -1 });
     res.json(notes);
@@ -33,12 +35,12 @@ router.get('/my-notes', auth, async (req, res) => {
     console.error(err.message);
     res.status(500).json({ message: 'Server error' });
   }
-});
+}));
 
 // @route   GET api/notes
 // @desc    Get global notes + authenticated user's private notes
 // @access  Public/Private
-router.get('/', async (req, res) => {
+router.get('/', catchAsync(async (req, res, next) => {
   try {
     const globalNotes = await Note.find({ privacy: 'global' }).sort({ createdAt: -1 });
 
@@ -63,7 +65,7 @@ router.get('/', async (req, res) => {
       error: process.env.NODE_ENV === 'development' ? err.message : 'Server error'
     });
   }
-});
+}));
 
 // @route   POST api/notes
 // @desc    Create a new note
@@ -76,7 +78,7 @@ router.post('/', [
   body('category').optional().trim().isLength({ max: 100 }),
   body('privacy').optional().isIn(['private', 'global']),
   body('tags').optional()
-], async (req, res) => {
+], catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
@@ -115,12 +117,12 @@ router.post('/', [
       error: process.env.NODE_ENV === 'development' ? err.message : 'Server error'
     });
   }
-});
+}));
 
 // @route   PUT api/notes/like/:id
 // @desc    Like a note
 // @access  Private
-router.put('/like/:id', auth, async (req, res) => {
+router.put('/like/:id', auth, catchAsync(async (req, res, next) => {
   try {
     const note = await Note.findById(req.params.id);
     if (!note) return res.status(404).json({ message: 'Note not found' });
@@ -133,12 +135,12 @@ router.put('/like/:id', auth, async (req, res) => {
     if (err.name === 'CastError') return res.status(404).json({ message: 'Note not found' });
     res.status(500).json({ message: 'Server error' });
   }
-});
+}));
 
 // @route   GET api/notes/:id
 // @desc    Get a note by ID
 // @access  Public
-router.get('/:id', async (req, res) => {
+router.get('/:id', catchAsync(async (req, res, next) => {
   try {
     const note = await Note.findById(req.params.id);
     if (!note) return res.status(404).json({ message: 'Note not found' });
@@ -148,12 +150,12 @@ router.get('/:id', async (req, res) => {
     if (err.name === 'CastError') return res.status(404).json({ message: 'Note not found' });
     res.status(500).json({ message: 'Server error' });
   }
-});
+}));
 
 // @route   PUT api/notes/:id
 // @desc    Update a note
 // @access  Private
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, catchAsync(async (req, res, next) => {
   try {
     const note = await Note.findById(req.params.id);
     if (!note) return res.status(404).json({ message: 'Note not found' });
@@ -183,12 +185,12 @@ router.put('/:id', auth, async (req, res) => {
     if (err.name === 'CastError') return res.status(404).json({ message: 'Note not found' });
     res.status(500).json({ message: 'Server error' });
   }
-});
+}));
 
 // @route   DELETE api/notes/:id
 // @desc    Delete a note
 // @access  Private
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, catchAsync(async (req, res, next) => {
   try {
     const note = await Note.findById(req.params.id);
     if (!note) return res.status(404).json({ message: 'Note not found' });
@@ -204,6 +206,6 @@ router.delete('/:id', auth, async (req, res) => {
     if (err.name === 'CastError') return res.status(404).json({ message: 'Note not found' });
     res.status(500).json({ message: 'Server error' });
   }
-});
+}));
 
 export default router;

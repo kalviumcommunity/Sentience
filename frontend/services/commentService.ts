@@ -15,23 +15,17 @@ export interface Comment {
   createdAt: Date;
 }
 
-// Helper function to get auth token from localStorage
-const getAuthToken = () => {
-  return localStorage.getItem('authToken');
-};
-
 // Helper function to make authenticated requests
 const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {
-  const token = getAuthToken();
   const headers = {
     'Content-Type': 'application/json',
-    ...(token && { 'x-auth-token': token }),
     ...options.headers,
   };
 
   return fetch(url, {
     ...options,
     headers,
+    credentials: 'include'
   });
 };
 
@@ -70,16 +64,6 @@ export const addComment = async (noteId: string, content: string): Promise<Comme
   // Sanitize comment content
   const sanitizedContent = sanitizeCommentContent(content);
   try {
-    const token = getAuthToken();
-    if (!token) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to add comments",
-        variant: "destructive"
-      });
-      return null;
-    }
-
     const response = await makeAuthenticatedRequest(`${API_BASE_URL}/comments/${noteId}`, {
       method: 'POST',
       body: JSON.stringify({ content: sanitizedContent }),
@@ -120,16 +104,6 @@ export const addComment = async (noteId: string, content: string): Promise<Comme
 
 export const deleteComment = async (commentId: string): Promise<boolean> => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to delete comments",
-        variant: "destructive"
-      });
-      return false;
-    }
-
     const response = await makeAuthenticatedRequest(`${API_BASE_URL}/comments/${commentId}`, {
       method: 'DELETE',
     });
