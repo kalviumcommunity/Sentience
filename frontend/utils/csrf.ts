@@ -14,7 +14,7 @@ const getRandomValues = (array: Uint8Array): Uint8Array => {
 
 class CSRFProtection {
   private readonly TOKEN_KEY = 'csrf_token';
-  private readonly API_BASE_URL = import.meta.env.VITE_API_URL || 'https://sentience.onrender.com/api';
+  private readonly API_BASE_URL = import.meta.env.VITE_API_URL || 'https://sentience-xq1s.onrender.com/api';
 
   // Fetch CSRF token from backend
   async fetchToken(): Promise<string> {

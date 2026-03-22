@@ -39,7 +39,7 @@ app.set('trust proxy', 2);
 // CORS middleware
 const allowedOrigins = [
   'https://sentiencehub.netlify.app',
-  'https://sentience.onrender.com',
+  'https://sentience-xq1s.onrender.com',
   'http://localhost:3000',
   'http://localhost:4173',
   'http://localhost:5173',

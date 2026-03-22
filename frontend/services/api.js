@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'https://sentience.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://sentience-xq1s.onrender.com/api';
 
 // Helper function to make authenticated requests with retry and rate limiting
 const authRequest = async (endpoint, options = {}, retries = 3) => {

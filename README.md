@@ -101,7 +101,7 @@ A modern, full-stack web application designed to help students manage their acad
 
 #### Live Application
 - **🌐 Live Demo**: [https://sentiencehub.netlify.app/](https://sentiencehub.netlify.app/)
-- **🔧 Backend API**: [https://sentience.onrender.com](https://sentience.onrender.com)
+- **🔧 Backend API**: [https://sentience-xq1s.onrender.com](https://sentience-xq1s.onrender.com)
 
 #### Local Deployment
 Use Docker Compose for easy deployment:

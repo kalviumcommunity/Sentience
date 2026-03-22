@@ -8,7 +8,7 @@ const cspDirectives = {
     "'unsafe-inline'", // Required for React development
     "'unsafe-eval'", // Required for Vite development
     'https://api.dicebear.com', // For avatar generation
-    'https://sentience.onrender.com' // For API calls
+    'https://sentience-xq1s.onrender.com' // For API calls
   ],
   'style-src': [
     "'self'",
@@ -24,11 +24,11 @@ const cspDirectives = {
     "'self'",
     'data:', // For data URLs
     'https://api.dicebear.com', // For avatar generation
-    'https://sentience.onrender.com' // For API images
+    'https://sentience-xq1s.onrender.com' // For API images
   ],
   'connect-src': [
     "'self'",
-    'https://sentience.onrender.com', // For API calls
+    'https://sentience-xq1s.onrender.com', // For API calls
     'https://api.dicebear.com' // For avatar API
   ],
   'frame-src': ["'none'"], // No iframes allowed

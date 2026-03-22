@@ -100,7 +100,7 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
   useEffect(() => {
     const checkAPI = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'https://sentience.onrender.com/api';
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://sentience-xq1s.onrender.com/api';
         const response = await fetch(`${apiUrl}/health`);
         setApiAvailable(response.ok);
       } catch {

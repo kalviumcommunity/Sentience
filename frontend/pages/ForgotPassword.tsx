@@ -22,7 +22,7 @@ const ForgotPassword = () => {
     setError(null);
 
     try {
-      const response = await fetch('https://sentience.onrender.com/api/users/forgot-password', {
+      const response = await fetch('https://sentience-xq1s.onrender.com/api/users/forgot-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

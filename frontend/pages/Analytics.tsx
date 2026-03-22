@@ -79,7 +79,7 @@ interface AnalyticsInsights {
   overallWellness: number;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://sentience.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://sentience-xq1s.onrender.com/api';
 
 const Analytics = () => {
   const { currentUser } = useUser();

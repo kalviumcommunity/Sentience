@@ -1,7 +1,7 @@
 import { toast } from '@/hooks/use-toast';
 import { sanitizeCommentContent } from '@/utils/sanitize';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://sentience.onrender.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://sentience-xq1s.onrender.com/api';
 
 export interface Comment {
   id: string;

@@ -8,7 +8,7 @@ curl -s http://localhost:8000/api/health | jq . || echo "❌ Local health check 
 
 echo ""
 echo "🌐 Testing production health check..."
-curl -s https://sentience.onrender.com/api/health | jq . || echo "❌ Production health check failed"
+curl -s https://sentience-xq1s.onrender.com/api/health | jq . || echo "❌ Production health check failed"
 
 echo ""
 echo "🔍 MongoDB Connection Test..."

@@ -4,7 +4,7 @@
   publish = "frontend/dist"
 
 [build.environment]
-  VITE_API_URL = "https://sentience.onrender.com/api"
+  VITE_API_URL = "https://sentience-xq1s.onrender.com/api"
 
 [[redirects]]
   from = "/*"

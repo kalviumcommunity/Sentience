@@ -58,7 +58,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initializeAuth: async () => {
     set({ isLoading: true });
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://sentience.onrender.com/api'}/health`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://sentience-xq1s.onrender.com/api'}/health`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
