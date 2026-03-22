@@ -63,9 +63,7 @@ const Navbar = () => {
               className="flex items-center gap-2"
               aria-label="Go to homepage"
             >
-              <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center" aria-hidden="true">
-                <span className="text-primary-foreground font-bold">S</span>
-              </div>
+              <img src="/logo.png" alt="Sentience Logo" className="w-8 h-8 object-contain" />
               <span className="font-medium text-lg">Sentience</span>
             </Link>
           </div>
