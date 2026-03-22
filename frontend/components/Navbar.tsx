@@ -30,6 +30,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import logo from '../src/assets/logo.png';
 
 const Navbar = () => {
   const location = useLocation();
@@ -63,7 +64,7 @@ const Navbar = () => {
               className="flex items-center gap-2"
               aria-label="Go to homepage"
             >
-              <img src="/logo.png" alt="Sentience Logo" className="w-8 h-8 object-contain" />
+              <img src={logo} alt="Sentience Logo" className="w-8 h-8 object-contain" />
               <span className="font-medium text-lg">Sentience</span>
             </Link>
           </div>
