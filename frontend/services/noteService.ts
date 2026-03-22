@@ -22,6 +22,52 @@ export interface Note {
   downloads: number;
 }
 
+// Internal interface for API response mapping
+interface ApiNote {
+  _id?: string;
+  id?: string;
+  title: string;
+  description: string;
+  content: string;
+  category: string;
+  tags?: string[];
+  privacy?: 'private' | 'global';
+  user?: string;
+  userId?: string;
+  author?: {
+    id?: string;
+    name?: string;
+    avatar?: string;
+  };
+  authorName?: string;
+  authorAvatar?: string;
+  createdAt: string;
+  updatedAt: string;
+  likes?: number;
+  comments?: number;
+  downloads?: number;
+}
+
+const mapApiNoteToNote = (note: ApiNote): Note => ({
+  id: note._id || note.id || '',
+  title: note.title,
+  description: note.description,
+  content: note.content,
+  category: note.category,
+  tags: note.tags || [],
+  privacy: note.privacy || 'private',
+  author: {
+    id: note.author?.id || note.user || note.userId || '',
+    name: note.author?.name || note.authorName || 'Anonymous',
+    avatar: note.author?.avatar || note.authorAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Default'
+  },
+  createdAt: new Date(note.createdAt),
+  updatedAt: new Date(note.updatedAt),
+  likes: note.likes || 0,
+  comments: note.comments || 0,
+  downloads: note.downloads || 0
+});
+
 // Helper function to make authenticated requests
 const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {
   const headers = {
@@ -44,26 +90,8 @@ export const getNotes = async (): Promise<Note[]> => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const notes = await response.json();
-    return notes.map((note: Record<string, unknown>) => ({
-      id: note._id || note.id,
-      title: note.title,
-      description: note.description,
-      content: note.content,
-      category: note.category,
-      tags: note.tags || [],
-      privacy: note.privacy || 'private',
-      author: {
-        id: note.author?.id || note.user || note.userId,
-        name: note.author?.name || note.authorName || 'Anonymous',
-        avatar: note.author?.avatar || note.authorAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Default'
-      },
-      createdAt: new Date(note.createdAt),
-      updatedAt: new Date(note.updatedAt),
-      likes: note.likes || 0,
-      comments: note.comments || 0,
-      downloads: note.downloads || 0
-    }));
+    const notes: ApiNote[] = await response.json();
+    return notes.map(mapApiNoteToNote);
   } catch (error) {
     console.error('Error fetching notes:', error);
     toast({
@@ -86,26 +114,8 @@ export const getMyNotes = async (): Promise<Note[]> => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const notes = await response.json();
-    return notes.map((note: Record<string, unknown>) => ({
-      id: note._id || note.id,
-      title: note.title,
-      description: note.description,
-      content: note.content,
-      category: note.category,
-      tags: note.tags || [],
-      privacy: note.privacy || 'private',
-      author: {
-        id: note.author?.id || note.user || note.userId,
-        name: note.author?.name || note.authorName || 'Anonymous',
-        avatar: note.author?.avatar || note.authorAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Default'
-      },
-      createdAt: new Date(note.createdAt),
-      updatedAt: new Date(note.updatedAt),
-      likes: note.likes || 0,
-      comments: note.comments || 0,
-      downloads: note.downloads || 0
-    }));
+    const notes: ApiNote[] = await response.json();
+    return notes.map(mapApiNoteToNote);
   } catch (error) {
     console.error('Error fetching my notes:', error);
     toast({
@@ -125,29 +135,8 @@ export const getGlobalNotes = async (): Promise<Note[]> => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const notes = await response.json();
-    
-    const mappedNotes = notes.map((note: Record<string, unknown>) => ({
-      id: note._id || note.id,
-      title: note.title,
-      description: note.description,
-      content: note.content,
-      category: note.category,
-      tags: note.tags || [],
-      privacy: note.privacy || 'global',
-      author: {
-        id: note.author?.id || note.user || note.userId,
-        name: note.author?.name || note.authorName || 'Anonymous',
-        avatar: note.author?.avatar || note.authorAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Default'
-      },
-      createdAt: new Date(note.createdAt),
-      updatedAt: new Date(note.updatedAt),
-      likes: note.likes || 0,
-      comments: note.comments || 0,
-      downloads: note.downloads || 0
-    }));
-    
-    return mappedNotes;
+    const notes: ApiNote[] = await response.json();
+    return notes.map(mapApiNoteToNote);
   } catch (error) {
     console.error('Error fetching global notes:', error);
     toast({
@@ -170,25 +159,8 @@ export const getNote = async (noteId: string): Promise<Note | null> => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const note = await response.json();
-    return {
-      id: note._id || note.id,
-      title: note.title,
-      description: note.description,
-      content: note.content,
-      category: note.category,
-      tags: note.tags || [],
-      author: {
-        id: note.user || note.userId,
-        name: note.authorName || 'Anonymous',
-        avatar: note.authorAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Default'
-      },
-      createdAt: new Date(note.createdAt),
-      updatedAt: new Date(note.updatedAt),
-      likes: note.likes || 0,
-      comments: note.comments || 0,
-      downloads: note.downloads || 0
-    };
+    const note: ApiNote = await response.json();
+    return mapApiNoteToNote(note);
   } catch (error) {
     console.error('Error fetching note:', error);
     toast({
@@ -225,31 +197,14 @@ export const createNote = async (noteData: {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const note = await response.json();
+    const note: ApiNote = await response.json();
 
     toast({
       title: "Success!",
       description: "Note created successfully",
     });
 
-    return {
-      id: note._id || note.id,
-      title: note.title,
-      description: note.description,
-      content: note.content,
-      category: note.category,
-      tags: note.tags || [],
-      author: {
-        id: note.user || note.userId,
-        name: note.authorName || 'Anonymous',
-        avatar: note.authorAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Default'
-      },
-      createdAt: new Date(note.createdAt),
-      updatedAt: new Date(note.updatedAt),
-      likes: note.likes || 0,
-      comments: note.comments || 0,
-      downloads: note.downloads || 0
-    };
+    return mapApiNoteToNote(note);
   } catch (error) {
     console.error('Error creating note:', error);
     toast({
@@ -263,12 +218,13 @@ export const createNote = async (noteData: {
 
 export const updateNote = async (
   noteId: string,
-  noteData: Partial<{
+  noteData:Partial<{
     title: string;
     description: string;
     content: string;
     category: string;
     tags: string;
+    privacy: 'private' | 'global';
   }>
 ): Promise<Note | null> => {
   try {
@@ -278,6 +234,7 @@ export const updateNote = async (
     if (noteData.description !== undefined) updateData.description = noteData.description;
     if (noteData.content !== undefined) updateData.content = noteData.content;
     if (noteData.category !== undefined) updateData.category = noteData.category;
+    if (noteData.privacy !== undefined) updateData.privacy = noteData.privacy;
     if (noteData.tags !== undefined) {
       updateData.tags = noteData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
     }
@@ -291,31 +248,14 @@ export const updateNote = async (
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const note = await response.json();
+    const note: ApiNote = await response.json();
 
     toast({
       title: "Success!",
       description: "Note updated successfully",
     });
 
-    return {
-      id: note._id || note.id,
-      title: note.title,
-      description: note.description,
-      content: note.content,
-      category: note.category,
-      tags: note.tags || [],
-      author: {
-        id: note.user || note.userId,
-        name: note.authorName || 'Anonymous',
-        avatar: note.authorAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Default'
-      },
-      createdAt: new Date(note.createdAt),
-      updatedAt: new Date(note.updatedAt),
-      likes: note.likes || 0,
-      comments: note.comments || 0,
-      downloads: note.downloads || 0
-    };
+    return mapApiNoteToNote(note);
   } catch (error) {
     console.error('Error updating note:', error);
     toast({
@@ -337,26 +277,9 @@ export const likeNote = async (noteId: string): Promise<Note | null> => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const note = await response.json();
+    const note: ApiNote = await response.json();
 
-    return {
-      id: note._id || note.id,
-      title: note.title,
-      description: note.description,
-      content: note.content,
-      category: note.category,
-      tags: note.tags || [],
-      author: {
-        id: note.user || note.userId,
-        name: note.authorName || 'Anonymous',
-        avatar: note.authorAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Default'
-      },
-      createdAt: new Date(note.createdAt),
-      updatedAt: new Date(note.updatedAt),
-      likes: note.likes || 0,
-      comments: note.comments || 0,
-      downloads: note.downloads || 0
-    };
+    return mapApiNoteToNote(note);
   } catch (error) {
     console.error('Error liking note:', error);
     toast({

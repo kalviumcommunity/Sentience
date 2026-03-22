@@ -22,7 +22,7 @@ router.post('/logout', auth, catchAsync(async (req, res, next) => {
     res.clearCookie('authToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: 'none'
     }).json({ message: 'Logged out successfully' });
   } catch (err) {
     console.error('Logout error:', err.message);
@@ -206,7 +206,7 @@ router.post('/register', [
         res.cookie('authToken', token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
+          sameSite: 'none',
           maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         }).json({ 
           user: {
@@ -309,7 +309,7 @@ router.post('/login', catchAsync(async (req, res, next) => {
         res.cookie('authToken', token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
+          sameSite: 'none',
           maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         }).json({ 
           user: {
